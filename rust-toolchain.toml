@@ -1,0 +1,8 @@
+# Copyright (c) 2026 MonkeyKing.dev
+#
+# SPDX-License-Identifier: MIT
+
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

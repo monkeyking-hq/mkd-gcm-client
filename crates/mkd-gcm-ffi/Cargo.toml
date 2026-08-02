@@ -1,0 +1,24 @@
+# Copyright (c) 2026 MonkeyKing.dev
+#
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "mkd-gcm-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/mkd-gcm-ffi"
+readme = "../../README.md"
+description = "C ABI for mkd-gcm — thin language SDKs (Java/JNA, Python, .NET) call this"
+keywords = ["gcm", "ffi", "cdylib", "jna", "monkeyking"]
+categories = ["network-programming", "api-bindings", "external-ffi-bindings"]
+
+[lib]
+name = "mkd_gcm_ffi"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+mkd-gcm = { version = "0.2.0", path = "../mkd-gcm" }

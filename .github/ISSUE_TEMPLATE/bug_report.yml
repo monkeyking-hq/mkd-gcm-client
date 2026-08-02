@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a problem with the GCM client libraries
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. **Do not** include secrets, tokens, or real customer data.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - mkd-gcm (Rust)
+        - mkd-gcm-ffi (C ABI)
+        - Java SDK
+        - Docs / packaging
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, expected vs actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "0.2.0"
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, Rust/Java version, server version if relevant
+    validations:
+      required: false

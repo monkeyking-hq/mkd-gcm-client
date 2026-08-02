@@ -1,0 +1,21 @@
+# Copyright (c) 2026 MonkeyKing.dev
+#
+# SPDX-License-Identifier: MIT
+
+[workspace]
+resolver = "2"
+members = ["crates/mkd-gcm", "crates/mkd-gcm-ffi"]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+authors = ["MonkeyKing.dev"]
+repository = "https://github.com/monkeyking-hq/mkd-gcm-client"
+homepage = "https://github.com/monkeyking-hq/mkd-gcm-client"
+documentation = "https://docs.rs/mkd-gcm"
+readme = "README.md"
+
+[workspace.lints.clippy]
+cognitive_complexity = "warn"
+too_many_lines = "warn"

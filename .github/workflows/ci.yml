@@ -1,0 +1,70 @@
+# Copyright (c) 2026 MonkeyKing.dev
+# SPDX-License-Identifier: MIT
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.97.1
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy -p mkd-gcm -p mkd-gcm-ffi --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test -p mkd-gcm -p mkd-gcm-ffi
+
+  java:
+    name: Java (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: bindings/java
+            java: "11"
+          - module: bindings/java-jackson2
+            java: "11"
+          - module: bindings/java-jackson3
+            java: "17"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      - name: Install core SDK (for jackson modules)
+        if: matrix.module != 'bindings/java'
+        working-directory: bindings/java
+        run: mvn -q -DskipTests install
+
+      - name: Test
+        working-directory: ${{ matrix.module }}
+        run: mvn -q test
