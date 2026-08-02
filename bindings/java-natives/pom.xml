@@ -20,141 +20,161 @@
   <name>mkd-gcm native libraries</name>
   <description>
     Platform shared libraries for mkd-gcm-ffi (loaded by the Java SDK via JNA).
-    Host-platform binary is packaged under
-    dev/monkeyking/gcm/native/&lt;platform&gt;/ and also attached as a classifier JAR
-    (e.g. windows-x86_64, linux-x86_64, darwin-aarch64).
+    The main JAR ships windows-x86_64 and linux-x86_64 under
+    dev/monkeyking/gcm/native/&lt;platform&gt;/ so one dependency works on both
+    developer Windows and Linux CI/runtime.
   </description>
 
   <properties>
     <cargo.skip>false</cargo.skip>
+    <!-- Default product need: Win64 + Linux64 in one JAR for Percussion/VJ -->
+    <native.hostOnly>false</native.hostOnly>
     <rust.workspace.root>${project.basedir}/../..</rust.workspace.root>
+    <native.staging.dir>${project.basedir}/target/native-staging</native.staging.dir>
   </properties>
 
   <build>
-    <extensions>
-      <extension>
-        <groupId>kr.motd.maven</groupId>
-        <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.1</version>
-      </extension>
-    </extensions>
-
     <plugins>
+      <!--
+        Stage windows-x86_64 + linux-x86_64 (scripts/stage-natives.ps1).
+        -Dnative.hostOnly=true → only the build host platform (faster local loops).
+        -Dcargo.skip=true → reuse already-built artifacts under target/.
+      -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.5.0</version>
         <executions>
           <execution>
-            <id>cargo-build-ffi</id>
+            <id>stage-natives</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>exec</goal>
             </goals>
             <configuration>
-              <skip>${cargo.skip}</skip>
-              <executable>cargo</executable>
-              <workingDirectory>${rust.workspace.root}</workingDirectory>
+              <executable>pwsh</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
               <arguments>
-                <argument>build</argument>
-                <argument>-p</argument>
-                <argument>mkd-gcm-ffi</argument>
-                <argument>--release</argument>
+                <argument>-NoProfile</argument>
+                <argument>-File</argument>
+                <argument>${project.basedir}/scripts/stage-natives.ps1</argument>
               </arguments>
+              <environmentVariables>
+                <NATIVE_HOST_ONLY>${native.hostOnly}</NATIVE_HOST_ONLY>
+                <NATIVE_SKIP_CARGO>${cargo.skip}</NATIVE_SKIP_CARGO>
+              </environmentVariables>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Copy cargo release artifact into the classifier resource tree -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>copy-staged-natives</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}/dev/monkeyking/gcm/native</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${native.staging.dir}</directory>
+                  <filtering>false</filtering>
+                  <excludes>
+                    <exclude>STAGED.txt</exclude>
+                  </excludes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <version>3.1.0</version>
         <executions>
           <execution>
-            <id>copy-native</id>
-            <phase>process-resources</phase>
+            <id>verify-required-platforms</id>
+            <phase>prepare-package</phase>
             <goals>
               <goal>run</goal>
             </goals>
             <configuration>
               <target>
-                <condition property="is.windows">
-                  <os family="windows"/>
-                </condition>
-                <condition property="is.mac">
-                  <os family="mac"/>
-                </condition>
-                <condition property="is.unix.not.mac">
-                  <and>
-                    <os family="unix"/>
-                    <not>
-                      <os family="mac"/>
-                    </not>
-                  </and>
-                </condition>
-
-                <condition property="lib.file" value="mkd_gcm_ffi.dll">
-                  <isset property="is.windows"/>
-                </condition>
-                <condition property="lib.file" value="libmkd_gcm_ffi.dylib">
-                  <isset property="is.mac"/>
-                </condition>
-                <condition property="lib.file" value="libmkd_gcm_ffi.so">
-                  <isset property="is.unix.not.mac"/>
-                </condition>
-
-                <fail unless="lib.file" message="Unsupported OS for mkd-gcm-natives packaging"/>
-
-                <!-- Allow -Dnative.platform=... override; default os-maven classifier -->
-                <condition property="plat" value="${native.platform}">
-                  <and>
-                    <isset property="native.platform"/>
-                    <not>
-                      <equals arg1="${native.platform}" arg2=""/>
-                    </not>
-                  </and>
-                </condition>
-                <property name="plat" value="${os.detected.classifier}"/>
-
-                <property name="cargo.release" location="${rust.workspace.root}/target/release"/>
-                <property name="dest.dir"
-                          location="${project.build.outputDirectory}/dev/monkeyking/gcm/native/${plat}"/>
-
-                <mkdir dir="${dest.dir}"/>
-                <copy file="${cargo.release}/${lib.file}" todir="${dest.dir}" failonerror="true"/>
-                <echo message="Packaged ${lib.file} as platform ${plat}"/>
-
-                <!-- Export for later attach -->
-                <echo file="${project.build.directory}/native-platform.properties"
-                      message="native.platform=${plat}${line.separator}native.lib.file=${lib.file}${line.separator}"/>
+                <fail message="Missing staged windows-x86_64 native (see scripts/stage-natives.ps1)">
+                  <condition>
+                    <and>
+                      <not>
+                        <equals arg1="${native.hostOnly}" arg2="true"/>
+                      </not>
+                      <not>
+                        <available file="${project.build.outputDirectory}/dev/monkeyking/gcm/native/windows-x86_64/mkd_gcm_ffi.dll"/>
+                      </not>
+                    </and>
+                  </condition>
+                </fail>
+                <fail message="Missing staged linux-x86_64 native (need WSL+Rust, or -Dnative.hostOnly=true)">
+                  <condition>
+                    <and>
+                      <not>
+                        <equals arg1="${native.hostOnly}" arg2="true"/>
+                      </not>
+                      <not>
+                        <available file="${project.build.outputDirectory}/dev/monkeyking/gcm/native/linux-x86_64/libmkd_gcm_ffi.so"/>
+                      </not>
+                    </and>
+                  </condition>
+                </fail>
               </target>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Main JAR: contains host-platform natives under the resource path (runtime extraction). -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
-          <!-- Classified JAR for consumers who pin an OS classifier explicitly -->
           <execution>
-            <id>classifier-jar</id>
+            <id>windows-x86_64</id>
             <phase>package</phase>
             <goals>
               <goal>jar</goal>
             </goals>
             <configuration>
-              <classifier>${os.detected.classifier}</classifier>
+              <classifier>windows-x86_64</classifier>
+              <includes>
+                <include>dev/monkeyking/gcm/native/windows-x86_64/**</include>
+                <include>dev/monkeyking/gcm/natives/**</include>
+                <include>META-INF/**</include>
+              </includes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>linux-x86_64</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>linux-x86_64</classifier>
+              <includes>
+                <include>dev/monkeyking/gcm/native/linux-x86_64/**</include>
+                <include>dev/monkeyking/gcm/natives/**</include>
+                <include>META-INF/**</include>
+              </includes>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- Natives have no Java sources; still attach empty sources/javadoc for Central -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -179,10 +199,52 @@
             <goals>
               <goal>jar</goal>
             </goals>
-            <configuration><doclint>none</doclint></configuration>
+            <configuration>
+              <doclint>none</doclint>
+            </configuration>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!-- When not on Windows, run the bash stager instead of pwsh -->
+    <profile>
+      <id>native-stage-unix</id>
+      <activation>
+        <os>
+          <family>unix</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>stage-natives</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>bash</executable>
+                  <workingDirectory>${project.basedir}</workingDirectory>
+                  <arguments>
+                    <argument>${project.basedir}/scripts/stage-natives.sh</argument>
+                  </arguments>
+                  <environmentVariables>
+                    <HOST_ONLY>${native.hostOnly}</HOST_ONLY>
+                    <SKIP_CARGO>${cargo.skip}</SKIP_CARGO>
+                  </environmentVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

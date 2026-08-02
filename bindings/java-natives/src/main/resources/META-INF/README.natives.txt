@@ -1,36 +1,41 @@
 mkd-gcm-natives
 ===============
 
-Platform shared libraries for the GCM Java SDK (libmkd_gcm_ffi / mkd_gcm_ffi).
+Shared libraries for the GCM Java SDK (mkd_gcm_ffi), embedded as classpath
+resources and extracted at runtime by mkd-gcm-sdk.
 
-Layout inside this JAR:
-
-  dev/monkeyking/gcm/native/<platform>/<library-file>
-
-Platforms (classifier names match os-maven-plugin):
-
+Supported platforms (current product requirement)
+-------------------------------------------------
   windows-x86_64   → mkd_gcm_ffi.dll
   linux-x86_64     → libmkd_gcm_ffi.so
-  linux-aarch_64   → libmkd_gcm_ffi.so
-  osx-x86_64       → libmkd_gcm_ffi.dylib
-  osx-aarch_64     → libmkd_gcm_ffi.dylib
 
-The Java SDK (mkd-gcm-sdk) extracts the matching library at runtime when
-jna.library.path is not already set. You can also depend on the classified
-artifact explicitly:
+Layout inside this JAR
+----------------------
+  dev/monkeyking/gcm/native/<platform>/<library-file>
 
+Consumer dependency (both platforms in the main JAR)
+----------------------------------------------------
   <dependency>
     <groupId>dev.monkeyking</groupId>
     <artifactId>mkd-gcm-natives</artifactId>
     <version>VERSION</version>
-    <classifier>windows-x86_64</classifier>
   </dependency>
 
-Build (from repository root):
+Optional platform-only classifiers (smaller downloads if you pin one OS):
+  …:mkd-gcm-natives:VERSION:windows-x86_64
+  …:mkd-gcm-natives:VERSION:linux-x86_64
 
-  cargo build -p mkd-gcm-ffi --release
-  cd bindings && mvn -pl java-natives package
+Build / stage
+-------------
+  From repo root (Windows, packages both Win+Linux via WSL for the .so):
 
-Skip cargo (use an existing release build):
+    cd bindings
+    mvn -pl java-natives package
 
-  mvn -pl java-natives package -Dcargo.skip=true
+  Host only (faster local loop):
+
+    mvn -pl java-natives package -Dnative.hostOnly=true
+
+  Scripts:
+    scripts/stage-natives.ps1
+    scripts/stage-natives.sh

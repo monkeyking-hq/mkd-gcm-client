@@ -1,1 +1,4 @@
 target/
+# Optional local drop zone for prebuilt libs (never commit binaries)
+prebuilt/
+

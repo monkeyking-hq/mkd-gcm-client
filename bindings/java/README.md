@@ -17,7 +17,10 @@ never expose the PAT to the browser.
 | `dev.monkeyking:mkd-gcm-sdk-jackson2` | Optional Jackson 2.x helpers |
 | `dev.monkeyking:mkd-gcm-sdk-jackson3` | Optional Jackson 3.x helpers |
 
-### Consumer dependency
+### Consumer dependency (Percussion / VJ)
+
+One natives JAR carries **both Windows x64 and Linux x64** shared libraries.
+The SDK extracts the matching one at runtime.
 
 ```xml
 <dependency>
@@ -29,44 +32,42 @@ never expose the PAT to the browser.
   <groupId>dev.monkeyking</groupId>
   <artifactId>mkd-gcm-natives</artifactId>
   <version>0.2.0</version>
-  <!-- optional but recommended: pin the platform classifier -->
-  <!-- <classifier>windows-x86_64</classifier> -->
-  <!-- <classifier>linux-x86_64</classifier> -->
-  <!-- <classifier>osx-aarch_64</classifier> -->
+  <!-- no classifier: main JAR includes windows-x86_64 + linux-x86_64 -->
 </dependency>
 ```
 
-The SDK extracts the matching native from the classpath at startup when
-`jna.library.path` is not set. You can still ship a system library and set
-`jna.library.path` instead of depending on `mkd-gcm-natives`.
+Optional platform-only classifiers (smaller) if you want to pin one OS:
+
+- `windows-x86_64`
+- `linux-x86_64`
+
+You can still set `jna.library.path` to a system install instead of depending
+on `mkd-gcm-natives`.
 
 ### Build the reactor
 
 From the **bindings/** directory (parent POM):
 
 ```bash
-# builds cargo mkd-gcm-ffi --release, packages natives + SDK + Jackson modules
+# Packages Win64 + Linux64 natives (Linux via WSL when building on Windows)
 mvn -q clean package
 mvn -q test
 ```
 
-Skip cargo when the release FFI is already built:
+Host-only (faster; Windows DLL only on a Windows machine):
 
 ```bash
-mvn -pl java-natives package -Dcargo.skip=true
+mvn -pl java-natives package -Dnative.hostOnly=true
 ```
 
-| OS | Cargo artifact | Classifier (os-maven) |
-|----|----------------|------------------------|
-| Linux x86_64 | `libmkd_gcm_ffi.so` | `linux-x86_64` |
-| Linux aarch64 | `libmkd_gcm_ffi.so` | `linux-aarch_64` |
-| macOS Intel | `libmkd_gcm_ffi.dylib` | `osx-x86_64` |
-| macOS Apple Silicon | `libmkd_gcm_ffi.dylib` | `osx-aarch_64` |
-| Windows x64 | `mkd_gcm_ffi.dll` | `windows-x86_64` |
+| Platform | Library file | How it is built (Windows host) |
+|----------|--------------|--------------------------------|
+| `windows-x86_64` | `mkd_gcm_ffi.dll` | host `cargo build -p mkd-gcm-ffi --release` |
+| `linux-x86_64` | `libmkd_gcm_ffi.so` | **WSL** cargo with `CARGO_TARGET_DIR=target/linux-x86_64` |
 
 Resource path inside the natives JAR:
 
-`dev/monkeyking/gcm/native/<classifier>/<libfile>`
+`dev/monkeyking/gcm/native/<platform>/<libfile>`
 
 Header: `include/mkd_gcm.h` (repo root).
 

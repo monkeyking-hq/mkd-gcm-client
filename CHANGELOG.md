@@ -10,7 +10,7 @@
 - **`include/mkd_gcm.h`**: public C header.
 - **Java thin SDK** (`bindings/java`, Maven `dev.monkeyking:mkd-gcm-sdk`): JNA wrapper, `GcmClient`, `CorrectionSubmission` (camelCase JSON for the browser language-plugin contract).
 - **Optional** `mkd-gcm-sdk-jackson2` / `mkd-gcm-sdk-jackson3` modules.
-- **`mkd-gcm-natives`**: Maven packaging of host-platform `mkd_gcm_ffi` shared libraries (classpath extraction + platform classifier JARs).
+- **`mkd-gcm-natives`**: Maven packaging of `mkd_gcm_ffi` for **windows-x86_64** and **linux-x86_64** in one main JAR (plus optional platform classifier JARs); Linux staged via WSL when packaging on Windows.
 - **Maven Central** publish profile (`-Pcentral`) via Sonatype Central Publisher Portal (`publishingServerId=mkd-central`; HashSeal uses `hashseal-central`).
 
 ### Changed

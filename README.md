@@ -129,9 +129,9 @@ Java modules live under [`bindings/`](bindings/) with parent
 </dependency>
 ```
 
-`mkd-gcm-natives` packages the FFI shared library for the build host (and a
-platform classifier JAR). The SDK extracts it from the classpath unless you set
-`jna.library.path`.
+`mkd-gcm-natives` packages **windows-x86_64** and **linux-x86_64** FFI libraries
+in one JAR (Linux `.so` built via WSL when packaging on Windows). The SDK
+extracts the matching library at runtime unless you set `jna.library.path`.
 
 **Publish to Maven Central** (Sonatype Central Portal):
 
