@@ -135,7 +135,8 @@ platform classifier JAR). The SDK extracts it from the classpath unless you set
 
 **Publish to Maven Central** (Sonatype Central Portal):
 
-1. `~/.m2/settings.xml` server id **`central`** with a Portal user token
+1. `~/.m2/settings.xml` server id **`mkd-central`** with a Portal user token  
+   (HashSeal and other lines use their own ids, e.g. `hashseal-central`)
 2. GPG key available to Maven
 3. From `bindings/`: `mvn clean deploy -Pcentral`
 

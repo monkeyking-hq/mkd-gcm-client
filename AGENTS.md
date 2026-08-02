@@ -71,6 +71,7 @@ Never hardcode lab ports in tests.
 - **crates.io:** metadata is set; do not `cargo publish` without an explicit release.
 - **Maven groupId:** `dev.monkeyking`. Reactor parent: `bindings/pom.xml`.
 - **Maven Central:** profile `-Pcentral` uses Sonatype Central Portal plugin;
-  credentials live only in `~/.m2/settings.xml` server id **`central`** (never commit).
+  credentials live only in `~/.m2/settings.xml` server id **`mkd-central`**
+  (never commit). Other products use separate server ids (e.g. `hashseal-central`).
 - **Natives:** module `bindings/java-natives` builds `mkd-gcm-ffi` via cargo and
   packages the shared library; multi-OS classifier JARs need per-platform builds.

@@ -63,8 +63,9 @@
     <maven.compiler.release>11</maven.compiler.release>
     <jna.version>5.14.0</jna.version>
     <junit.version>5.10.2</junit.version>
-    <!-- Sonatype Central Portal (credentials: ~/.m2/settings.xml server id "central") -->
+    <!-- Sonatype Central Portal (credentials: ~/.m2/settings.xml server id "mkd-central") -->
     <central.publishing.plugin.version>0.9.0</central.publishing.plugin.version>
+    <central.publishing.serverId>mkd-central</central.publishing.serverId>
     <central.autoPublish>false</central.autoPublish>
     <gpg.skip>true</gpg.skip>
   </properties>
@@ -168,7 +169,8 @@
           <version>${central.publishing.plugin.version}</version>
           <extensions>true</extensions>
           <configuration>
-            <publishingServerId>central</publishingServerId>
+            <!-- mkd-central vs hashseal-central: separate Portal tokens in settings.xml -->
+            <publishingServerId>${central.publishing.serverId}</publishingServerId>
             <!-- Manual publish in Portal by default; -Dcentral.autoPublish=true for CI -->
             <autoPublish>${central.autoPublish}</autoPublish>
             <waitUntil>validated</waitUntil>
@@ -193,11 +195,11 @@
     <!--
       Maven Central (Sonatype Central Publisher Portal).
       Requires:
-        - ~/.m2/settings.xml server id "central" (user token)
+        - ~/.m2/settings.xml server id "mkd-central" (Portal user token)
+          (HashSeal uses a separate server id "hashseal-central")
         - GPG key available to maven-gpg-plugin (disable skip: -Dgpg.skip=false)
       Usage:
-        mvn -pl bindings -am clean deploy -Pcentral
-        or from bindings/: mvn clean deploy -Pcentral
+        from bindings/: mvn clean deploy -Pcentral
     -->
     <profile>
       <id>central</id>

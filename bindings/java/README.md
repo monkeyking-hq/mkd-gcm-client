@@ -76,17 +76,26 @@ Namespace / groupId: **`dev.monkeyking`**.
 
 ### Local credentials
 
-`~/.m2/settings.xml` must define a server with id **`central`** (Sonatype
-Central Publisher Portal user token — not your login password):
+`~/.m2/settings.xml` must define a server with id **`mkd-central`** (Sonatype
+Central Publisher Portal user token — not your login password). Use a separate
+server id (e.g. **`hashseal-central`**) for other product lines so tokens stay
+isolated:
 
 ```xml
 <settings>
   <servers>
     <server>
-      <id>central</id>
-      <username><!-- token username --></username>
+      <id>mkd-central</id>
+      <username><!-- MonkeyKing / mkd Portal token username --></username>
       <password><!-- token password --></password>
     </server>
+    <!-- other products, e.g. HashSeal:
+    <server>
+      <id>hashseal-central</id>
+      <username><!-- … --></username>
+      <password><!-- … --></password>
+    </server>
+    -->
   </servers>
 </settings>
 ```

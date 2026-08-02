@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: MIT
 #
 # Publish Java artifacts to Maven Central (Sonatype Central Publisher Portal).
+# Maven settings server id: mkd-central (HashSeal uses hashseal-central elsewhere).
 #
 # Secrets (repository or org):
-#   CENTRAL_TOKEN_USERNAME  — Portal user token name
-#   CENTRAL_TOKEN_PASSWORD  — Portal user token password
-#   GPG_PRIVATE_KEY         — armored private key
-#   GPG_PASSPHRASE          — key passphrase
+#   MKD_CENTRAL_TOKEN_USERNAME  — Portal user token name for mkd namespace
+#   MKD_CENTRAL_TOKEN_PASSWORD  — Portal user token password
+#   GPG_PRIVATE_KEY             — armored private key
+#   GPG_PASSPHRASE              — key passphrase
 #
 # Manual: workflow_dispatch. Also runs on published GitHub Releases.
 
@@ -28,7 +29,7 @@ permissions:
 
 jobs:
   publish:
-    name: Deploy to Central
+    name: Deploy to Central (mkd-central)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,17 +48,17 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
-          server-id: central
-          server-username: CENTRAL_TOKEN_USERNAME
-          server-password: CENTRAL_TOKEN_PASSWORD
+          server-id: mkd-central
+          server-username: MKD_CENTRAL_TOKEN_USERNAME
+          server-password: MKD_CENTRAL_TOKEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Deploy (profile central)
         working-directory: bindings
         env:
-          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
-          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MKD_CENTRAL_TOKEN_USERNAME: ${{ secrets.MKD_CENTRAL_TOKEN_USERNAME }}
+          MKD_CENTRAL_TOKEN_PASSWORD: ${{ secrets.MKD_CENTRAL_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           AUTOPUB="${{ github.event.inputs.auto_publish || 'false' }}"
