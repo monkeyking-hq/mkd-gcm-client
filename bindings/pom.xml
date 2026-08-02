@@ -67,7 +67,16 @@
     <central.publishing.plugin.version>0.9.0</central.publishing.plugin.version>
     <central.publishing.serverId>mkd-central</central.publishing.serverId>
     <central.autoPublish>false</central.autoPublish>
+    <!--
+      GPG: same OpenPGP key you use for git commit signing is fine for Central.
+      Default gpg.skip=true (package/test); -Pcentral turns signing on.
+      On Windows we default to Gpg4win's GnuPG (see profile gpg-windows-gpg4win),
+      not the Git-for-Windows gpg on PATH (which has no secret keys).
+    -->
     <gpg.skip>true</gpg.skip>
+    <gpg.executable>gpg</gpg.executable>
+    <!-- Optional: long key id, e.g. DCE580367C80689A (monkeykinghq) -->
+    <gpg.keyname></gpg.keyname>
   </properties>
 
   <dependencyManagement>
@@ -157,6 +166,10 @@
             </execution>
           </executions>
           <configuration>
+            <skip>${gpg.skip}</skip>
+            <executable>${gpg.executable}</executable>
+            <!-- Empty keyname → gpg default / agent; set -Dgpg.keyname=… to pin -->
+            <keyname>${gpg.keyname}</keyname>
             <gpgArguments>
               <arg>--pinentry-mode</arg>
               <arg>loopback</arg>
@@ -194,12 +207,14 @@
   <profiles>
     <!--
       Maven Central (Sonatype Central Publisher Portal).
-      Requires:
+      Requirements (already wired in this reactor):
+        - sources.jar + javadoc.jar (maven-source / maven-javadoc plugins)
+        - GPG signatures on all artifacts (maven-gpg-plugin) — same key as git is OK
         - ~/.m2/settings.xml server id "mkd-central" (Portal user token)
-          (HashSeal uses a separate server id "hashseal-central")
-        - GPG key available to maven-gpg-plugin (disable skip: -Dgpg.skip=false)
       Usage:
-        from bindings/: mvn clean deploy -Pcentral
+        from bindings/:
+          mvn clean deploy -Pcentral
+          mvn clean deploy -Pcentral "-Dgpg.executable=C:\Tools\GnuPG\bin\gpg.exe" "-Dgpg.keyname=YOURKEY"
     -->
     <profile>
       <id>central</id>
@@ -210,10 +225,15 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <configuration>
-              <skip>${gpg.skip}</skip>
-            </configuration>
           </plugin>
           <plugin>
             <groupId>org.sonatype.central</groupId>
@@ -235,5 +255,23 @@
         </repository>
       </distributionManagement>
     </profile>
+
+    <!--
+      Gpg4win installs GnuPG under C:\Tools\GnuPG (or Program Files\GnuPG).
+      Git is already configured with gpg.program pointing here; PATH often
+      resolves to Git's own gpg first — wrong keyring for signing.
+    -->
+    <profile>
+      <id>gpg-windows-gpg4win</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <gpg.executable>C:\Tools\GnuPG\bin\gpg.exe</gpg.executable>
+      </properties>
+    </profile>
   </profiles>
 </project>
+

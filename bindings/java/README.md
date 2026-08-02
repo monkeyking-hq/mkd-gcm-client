@@ -101,21 +101,64 @@ isolated:
 </settings>
 ```
 
-### GPG signing
+### Sources, javadoc, and GPG (Central requirements)
 
-Central requires GPG signatures. Create a key if needed, publish the public key
-to a keyserver, then:
+Central requires for each module:
 
-```bash
-cd bindings
-mvn clean deploy -Pcentral
-# auto-publish after validation:
-mvn clean deploy -Pcentral -Dcentral.autoPublish=true
+| Artifact | How we produce it |
+|----------|-------------------|
+| main JAR | `package` |
+| `-sources.jar` | `maven-source-plugin` (attached on every build) |
+| `-javadoc.jar` | `maven-javadoc-plugin` (attached on every build) |
+| `*.asc` signatures | `maven-gpg-plugin` when using **`-Pcentral`** |
+
+**Yes — use the same OpenPGP key you already use for git commit signing.**  
+Maven does not need a separate “Maven key”; it shells out to `gpg` like git does.
+
+**Gpg4win on this machine:** GnuPG lives at `C:\Tools\GnuPG\bin\gpg.exe`
+(Gpg4win install dir is `C:\Tools\Gpg4win`; the signing tool is the GnuPG
+component). Git already uses that path via `gpg.program`. **Do not** use the
+`gpg` from Git for Windows on PATH — it has a different (empty) keyring.
+
+The reactor activates profile `gpg-windows-gpg4win` on Windows and sets:
+
+```text
+gpg.executable = C:\Tools\GnuPG\bin\gpg.exe
 ```
 
-Without a GPG key the `central` profile will fail at the sign step. Set
-`-Dgpg.skip=true` only for local packaging experiments (will not be accepted by
-Central).
+`~/.m2/settings.xml` can also set the same property (profile `mkd-gpg`).  
+Optionally pin a key:
+
+```powershell
+cd bindings
+mvn clean deploy -Pcentral "-Dgpg.keyname=DCE580367C80689A"  # monkeykinghq, or your key
+```
+
+The **public** key must be on a keyserver Central can fetch (e.g.
+[keys.openpgp.org](https://keys.openpgp.org)) — same as for verified git/GitHub
+signing. If the public key is not published, Central validation fails even when
+local signing succeeds.
+
+```powershell
+# Publish public key (once per key)
+& "C:\Tools\GnuPG\bin\gpg.exe" --keyserver keys.openpgp.org --send-keys DCE580367C80689A
+# or export and upload via the keys.openpgp.org web UI
+```
+
+Passphrase: gpg-agent / pinentry (same as git). For non-interactive:
+
+```powershell
+$env:MAVEN_GPG_PASSPHRASE = '…'   # only if your agent setup needs it
+```
+
+Deploy:
+
+```powershell
+cd bindings
+mvn clean deploy -Pcentral
+# auto-publish after Portal validation:
+mvn clean deploy -Pcentral "-Dcentral.autoPublish=true"
+```
 
 ### What gets deployed
 
