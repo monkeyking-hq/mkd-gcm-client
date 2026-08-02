@@ -12,12 +12,25 @@ import com.sun.jna.ptr.PointerByReference;
 /**
  * JNA mapping to {@code libmkd_gcm_ffi} ({@code mkd_gcm.h}).
  *
- * <p>Load path: {@code jna.library.path} or system library path must contain
- * {@code mkd_gcm_ffi} (e.g. {@code target/release} after {@code cargo build -p mkd-gcm-ffi}).
+ * <p>Load order:
+ *
+ * <ol>
+ *   <li>{@code jna.library.path} / system library path
+ *   <li>Classpath resources from {@code mkd-gcm-natives} (extracted to a temp dir)
+ * </ol>
  */
 interface NativeLib extends Library {
 
-    NativeLib INSTANCE = Native.load("mkd_gcm_ffi", NativeLib.class);
+    NativeLib INSTANCE = Loader.load();
+
+    final class Loader {
+        private Loader() {}
+
+        static NativeLib load() {
+            NativeLibLoader.prepare();
+            return Native.load("mkd_gcm_ffi", NativeLib.class);
+        }
+    }
 
     String mkd_gcm_version();
 

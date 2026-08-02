@@ -111,43 +111,36 @@ The browser never holds the PAT.
 
 Optional JSON: [`java-jackson2`](bindings/java-jackson2) / [`java-jackson3`](bindings/java-jackson3).
 
-### GitHub Packages (Maven)
+### Maven (`dev.monkeyking`)
 
-Until Maven Central is configured, Java artifacts publish to **GitHub Packages**
-for this repository.
-
-In `~/.m2/settings.xml` (or CI):
+Java modules live under [`bindings/`](bindings/) with parent
+`mkd-gcm-sdk-parent`.
 
 ```xml
-<servers>
-  <server>
-    <id>github</id>
-    <username>YOUR_GITHUB_USERNAME</username>
-    <password>YOUR_GITHUB_PAT</password> <!-- package:read / package:write -->
-  </server>
-</servers>
-```
-
-In your project POM:
-
-```xml
-<repositories>
-  <repository>
-    <id>github</id>
-    <url>https://maven.pkg.github.com/monkeyking-hq/mkd-gcm-client</url>
-  </repository>
-</repositories>
-
 <dependency>
   <groupId>dev.monkeyking</groupId>
   <artifactId>mkd-gcm-sdk</artifactId>
   <version>0.2.0</version>
 </dependency>
+<dependency>
+  <groupId>dev.monkeyking</groupId>
+  <artifactId>mkd-gcm-natives</artifactId>
+  <version>0.2.0</version>
+</dependency>
 ```
 
-Publish (maintainers): workflow **Publish Java to GitHub Packages** on release, or
-`mvn -DskipTests deploy` from each `bindings/java*` module with a
-`packages:write` token.
+`mkd-gcm-natives` packages the FFI shared library for the build host (and a
+platform classifier JAR). The SDK extracts it from the classpath unless you set
+`jna.library.path`.
+
+**Publish to Maven Central** (Sonatype Central Portal):
+
+1. `~/.m2/settings.xml` server id **`central`** with a Portal user token
+2. GPG key available to Maven
+3. From `bindings/`: `mvn clean deploy -Pcentral`
+
+See [`bindings/java/README.md`](bindings/java/README.md). Optional profile
+`-Pgithub-packages` still targets GitHub Packages.
 
 ## Design
 

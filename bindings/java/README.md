@@ -2,81 +2,129 @@
 
 Thin JNA wrapper over **`libmkd_gcm_ffi`** (Rust `mkd-gcm` → GCM network).
 
-**License:** MIT — Copyright (c) 2026 MonkeyKing.dev
+**License:** MIT — Copyright (c) 2026 MonkeyKing.dev  
+**Coordinates:** `dev.monkeyking:mkd-gcm-sdk:0.2.0`
 
 JVM host applications hold the GCM token **server-side**, call this SDK, and
 never expose the PAT to the browser.
 
-## Build native library
+## Maven coordinates
 
-From the **mkd-gcm-client** repo root:
+| Artifact | Role |
+|----------|------|
+| `dev.monkeyking:mkd-gcm-sdk` | Pure Java / JNA API |
+| `dev.monkeyking:mkd-gcm-natives` | Shared library (`mkd_gcm_ffi`) for the build host; also classifier JARs |
+| `dev.monkeyking:mkd-gcm-sdk-jackson2` | Optional Jackson 2.x helpers |
+| `dev.monkeyking:mkd-gcm-sdk-jackson3` | Optional Jackson 3.x helpers |
 
-```bash
-cargo build -p mkd-gcm-ffi --release
-```
-
-| OS | Artifact |
-|----|----------|
-| Linux | `target/release/libmkd_gcm_ffi.so` |
-| macOS | `target/release/libmkd_gcm_ffi.dylib` |
-| Windows | `target/release/mkd_gcm_ffi.dll` |
-
-Header: `include/mkd_gcm.h` (repo root).
-
-### Installing on the target machine
-
-1. Copy the matching shared library for the host OS/CPU into a directory the
-   process can load (e.g. `/usr/local/lib`, application `lib/`, or Windows
-   install dir).
-2. Ensure the JVM can find it:
-   - `-Djna.library.path=/path/to/dir` (recommended for apps), or
-   - system library path (`LD_LIBRARY_PATH`, `PATH` on Windows, etc.)
-3. Ship the JAR (`mkd-gcm-sdk`) on the classpath.
-4. Optional: package the `.so`/`.dll` inside your application installer or
-   container image next to the service.
-
-There is no separate “GCM installer” yet — host ops copy the native lib + JAR.
-
-## Maven
-
-```bash
-cd bindings/java
-mvn -q test
-mvn -q package
-```
-
-### GitHub Packages
-
-Artifacts publish to GitHub Packages (`maven.pkg.github.com/monkeyking-hq/mkd-gcm-client`)
-until Maven Central is configured. Authenticate with a PAT that has
-`read:packages` (and `write:packages` for deploy).
+### Consumer dependency
 
 ```xml
-<repositories>
-  <repository>
-    <id>github</id>
-    <url>https://maven.pkg.github.com/monkeyking-hq/mkd-gcm-client</url>
-  </repository>
-</repositories>
-
 <dependency>
   <groupId>dev.monkeyking</groupId>
   <artifactId>mkd-gcm-sdk</artifactId>
   <version>0.2.0</version>
 </dependency>
+<dependency>
+  <groupId>dev.monkeyking</groupId>
+  <artifactId>mkd-gcm-natives</artifactId>
+  <version>0.2.0</version>
+  <!-- optional but recommended: pin the platform classifier -->
+  <!-- <classifier>windows-x86_64</classifier> -->
+  <!-- <classifier>linux-x86_64</classifier> -->
+  <!-- <classifier>osx-aarch_64</classifier> -->
+</dependency>
 ```
 
-Maintainers: `mvn -DskipTests deploy` (server id `github` in `settings.xml`) or
-the **Publish Java to GitHub Packages** GitHub Actions workflow.
+The SDK extracts the matching native from the classpath at startup when
+`jna.library.path` is not set. You can still ship a system library and set
+`jna.library.path` instead of depending on `mkd-gcm-natives`.
 
-Optional JSON mappers (if you already use Jackson):
+### Build the reactor
 
-- `dev.monkeyking:mkd-gcm-sdk-jackson2` — Jackson 2.x
-- `dev.monkeyking:mkd-gcm-sdk-jackson3` — Jackson 3.x
+From the **bindings/** directory (parent POM):
 
-The core module has **no** Jackson dependency; `CorrectionSubmission.toJson()`
-works stand-alone. POJO field names are camelCase for the browser language
-plugin JSON contract.
+```bash
+# builds cargo mkd-gcm-ffi --release, packages natives + SDK + Jackson modules
+mvn -q clean package
+mvn -q test
+```
+
+Skip cargo when the release FFI is already built:
+
+```bash
+mvn -pl java-natives package -Dcargo.skip=true
+```
+
+| OS | Cargo artifact | Classifier (os-maven) |
+|----|----------------|------------------------|
+| Linux x86_64 | `libmkd_gcm_ffi.so` | `linux-x86_64` |
+| Linux aarch64 | `libmkd_gcm_ffi.so` | `linux-aarch_64` |
+| macOS Intel | `libmkd_gcm_ffi.dylib` | `osx-x86_64` |
+| macOS Apple Silicon | `libmkd_gcm_ffi.dylib` | `osx-aarch_64` |
+| Windows x64 | `mkd_gcm_ffi.dll` | `windows-x86_64` |
+
+Resource path inside the natives JAR:
+
+`dev/monkeyking/gcm/native/<classifier>/<libfile>`
+
+Header: `include/mkd_gcm.h` (repo root).
+
+## Publish to Maven Central
+
+Namespace / groupId: **`dev.monkeyking`**.
+
+### Local credentials
+
+`~/.m2/settings.xml` must define a server with id **`central`** (Sonatype
+Central Publisher Portal user token — not your login password):
+
+```xml
+<settings>
+  <servers>
+    <server>
+      <id>central</id>
+      <username><!-- token username --></username>
+      <password><!-- token password --></password>
+    </server>
+  </servers>
+</settings>
+```
+
+### GPG signing
+
+Central requires GPG signatures. Create a key if needed, publish the public key
+to a keyserver, then:
+
+```bash
+cd bindings
+mvn clean deploy -Pcentral
+# auto-publish after validation:
+mvn clean deploy -Pcentral -Dcentral.autoPublish=true
+```
+
+Without a GPG key the `central` profile will fail at the sign step. Set
+`-Dgpg.skip=true` only for local packaging experiments (will not be accepted by
+Central).
+
+### What gets deployed
+
+- Parent POM `mkd-gcm-sdk-parent`
+- `mkd-gcm-natives` (+ platform classifier JAR for the build host)
+- `mkd-gcm-sdk`
+- `mkd-gcm-sdk-jackson2`
+- `mkd-gcm-sdk-jackson3`
+
+Multi-OS natives: build/deploy on each platform (or CI matrix) so classifier
+JARs for linux/osx/windows are all present on Central.
+
+### Optional: GitHub Packages
+
+```bash
+mvn clean deploy -Pgithub-packages
+```
+
+(server id `github` in `settings.xml`)
 
 ## Host REST sketch (generic Java app)
 
@@ -100,11 +148,10 @@ Browser path: language plugin → `postUrl` → this REST handler → SDK → GC
 ## Layout
 
 ```text
-bindings/java/
-  pom.xml
-  src/main/java/dev/monkeyking/gcm/
-    GcmClient.java
-    GcmException.java
-    CorrectionSubmission.java
-    NativeLib.java
+bindings/
+  pom.xml                 parent (Central / GPG profiles)
+  java/                   mkd-gcm-sdk
+  java-natives/           mkd-gcm-natives (FFI shared libs)
+  java-jackson2/
+  java-jackson3/
 ```

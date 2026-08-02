@@ -25,11 +25,20 @@ cargo test -p mkd-gcm --test memory_nntp_integration -- --nocapture
 ### Java
 
 ```bash
-cargo build -p mkd-gcm-ffi --release   # native library for JNA
-cd bindings/java && mvn test
+cd bindings
+mvn test          # builds mkd-gcm-ffi (cargo) + all modules
+mvn package
 ```
 
-Optional Jackson helpers: `bindings/java-jackson2`, `bindings/java-jackson3`.
+Optional Jackson helpers are modules of the same reactor. Natives packaging:
+`java-natives` → `dev.monkeyking:mkd-gcm-natives`.
+
+Publish to Maven Central (maintainers; needs Portal token + GPG):
+
+```bash
+cd bindings
+mvn clean deploy -Pcentral
+```
 
 ## Pull requests
 

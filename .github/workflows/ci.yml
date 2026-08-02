@@ -38,33 +38,26 @@ jobs:
         run: cargo test -p mkd-gcm -p mkd-gcm-ffi
 
   java:
-    name: Java (${{ matrix.module }})
+    name: Java (Maven reactor)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - module: bindings/java
-            java: "11"
-          - module: bindings/java-jackson2
-            java: "11"
-          - module: bindings/java-jackson3
-            java: "17"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Install Rust toolchain (for natives)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.97.1
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ matrix.java }}
+          java-version: "17"
           cache: maven
 
-      - name: Install core SDK (for jackson modules)
-        if: matrix.module != 'bindings/java'
-        working-directory: bindings/java
-        run: mvn -q -DskipTests install
-
-      - name: Test
-        working-directory: ${{ matrix.module }}
-        run: mvn -q test
+      - name: Test all modules
+        working-directory: bindings
+        run: mvn -B -q test

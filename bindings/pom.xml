@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 MonkeyKing.dev
+  SPDX-License-Identifier: MIT
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.monkeyking</groupId>
+  <artifactId>mkd-gcm-sdk-parent</artifactId>
+  <version>0.2.0</version>
+  <packaging>pom</packaging>
+  <name>mkd-gcm SDK (parent)</name>
+  <description>Parent aggregator for the GCM Java SDK, natives, and Jackson helpers</description>
+  <url>https://github.com/monkeyking-hq/mkd-gcm-client</url>
+  <inceptionYear>2026</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <organization>
+    <name>MonkeyKing.dev</name>
+    <url>https://monkeyking.dev</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <name>MonkeyKing.dev</name>
+      <organization>MonkeyKing.dev</organization>
+      <organizationUrl>https://monkeyking.dev</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/monkeyking-hq/mkd-gcm-client.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/monkeyking-hq/mkd-gcm-client.git</developerConnection>
+    <url>https://github.com/monkeyking-hq/mkd-gcm-client</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/monkeyking-hq/mkd-gcm-client/issues</url>
+  </issueManagement>
+
+  <modules>
+    <!-- natives first: mkd-gcm-sdk optionally depends on it -->
+    <module>java-natives</module>
+    <module>java</module>
+    <module>java-jackson2</module>
+    <module>java-jackson3</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>11</maven.compiler.release>
+    <jna.version>5.14.0</jna.version>
+    <junit.version>5.10.2</junit.version>
+    <!-- Sonatype Central Portal (credentials: ~/.m2/settings.xml server id "central") -->
+    <central.publishing.plugin.version>0.9.0</central.publishing.plugin.version>
+    <central.autoPublish>false</central.autoPublish>
+    <gpg.skip>true</gpg.skip>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>dev.monkeyking</groupId>
+        <artifactId>mkd-gcm-sdk</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.monkeyking</groupId>
+        <artifactId>mkd-gcm-natives</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.5</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>3.3.1</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <goals>
+                <goal>jar-no-fork</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.6.3</version>
+          <configuration>
+            <doclint>none</doclint>
+          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>3.2.7</version>
+          <executions>
+            <execution>
+              <id>sign-artifacts</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>sign</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <gpgArguments>
+              <arg>--pinentry-mode</arg>
+              <arg>loopback</arg>
+            </gpgArguments>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.sonatype.central</groupId>
+          <artifactId>central-publishing-maven-plugin</artifactId>
+          <version>${central.publishing.plugin.version}</version>
+          <extensions>true</extensions>
+          <configuration>
+            <publishingServerId>central</publishingServerId>
+            <!-- Manual publish in Portal by default; -Dcentral.autoPublish=true for CI -->
+            <autoPublish>${central.autoPublish}</autoPublish>
+            <waitUntil>validated</waitUntil>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!--
+      Maven Central (Sonatype Central Publisher Portal).
+      Requires:
+        - ~/.m2/settings.xml server id "central" (user token)
+        - GPG key available to maven-gpg-plugin (disable skip: -Dgpg.skip=false)
+      Usage:
+        mvn -pl bindings -am clean deploy -Pcentral
+        or from bindings/: mvn clean deploy -Pcentral
+    -->
+    <profile>
+      <id>central</id>
+      <properties>
+        <gpg.skip>false</gpg.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <configuration>
+              <skip>${gpg.skip}</skip>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <extensions>true</extensions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Optional: still publish to GitHub Packages when useful -->
+    <profile>
+      <id>github-packages</id>
+      <distributionManagement>
+        <repository>
+          <id>github</id>
+          <name>GitHub Packages</name>
+          <url>https://maven.pkg.github.com/monkeyking-hq/mkd-gcm-client</url>
+        </repository>
+      </distributionManagement>
+    </profile>
+  </profiles>
+</project>

@@ -18,8 +18,9 @@ import com.sun.jna.ptr.PointerByReference;
  *   c.postCorrection(inboundGroup, submissionFromBrowserJson);
  * </pre>
  *
- * <p>Native library name: {@code mkd_gcm_ffi}. Set {@code jna.library.path} to
- * the directory containing the shared library (see bindings/java/README.md).
+ * <p>Native library name: {@code mkd_gcm_ffi}. Prefer depending on
+ * {@code mkd-gcm-natives} (extracted automatically), or set {@code
+ * jna.library.path} to a directory that contains the shared library.
  */
 public final class GcmClient implements AutoCloseable {
 
@@ -43,7 +44,9 @@ public final class GcmClient implements AutoCloseable {
             return new GcmClient(p);
         } catch (UnsatisfiedLinkError e) {
             throw new GcmException(
-                    "native library mkd_gcm_ffi not found (set jna.library.path)", e);
+                    "native library mkd_gcm_ffi not found — add dependency "
+                            + "dev.monkeyking:mkd-gcm-natives or set jna.library.path",
+                    e);
         }
     }
 
@@ -57,7 +60,9 @@ public final class GcmClient implements AutoCloseable {
             return new GcmClient(p);
         } catch (UnsatisfiedLinkError e) {
             throw new GcmException(
-                    "native library mkd_gcm_ffi not found (set jna.library.path)", e);
+                    "native library mkd_gcm_ffi not found — add dependency "
+                            + "dev.monkeyking:mkd-gcm-natives or set jna.library.path",
+                    e);
         }
     }
 

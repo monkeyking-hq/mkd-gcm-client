@@ -10,6 +10,8 @@
 - **`include/mkd_gcm.h`**: public C header.
 - **Java thin SDK** (`bindings/java`, Maven `dev.monkeyking:mkd-gcm-sdk`): JNA wrapper, `GcmClient`, `CorrectionSubmission` (camelCase JSON for the browser language-plugin contract).
 - **Optional** `mkd-gcm-sdk-jackson2` / `mkd-gcm-sdk-jackson3` modules.
+- **`mkd-gcm-natives`**: Maven packaging of host-platform `mkd_gcm_ffi` shared libraries (classpath extraction + platform classifier JARs).
+- **Maven Central** publish profile (`-Pcentral`) via Sonatype Central Publisher Portal (`publishingServerId=central`).
 
 ### Changed
 - Workspace version **0.2.0**.

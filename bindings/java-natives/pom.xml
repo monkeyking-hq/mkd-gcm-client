@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2026 MonkeyKing.dev
+  SPDX-License-Identifier: MIT
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>dev.monkeyking</groupId>
+    <artifactId>mkd-gcm-sdk-parent</artifactId>
+    <version>0.2.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>mkd-gcm-natives</artifactId>
+  <packaging>jar</packaging>
+  <name>mkd-gcm native libraries</name>
+  <description>
+    Platform shared libraries for mkd-gcm-ffi (loaded by the Java SDK via JNA).
+    Host-platform binary is packaged under
+    dev/monkeyking/gcm/native/&lt;platform&gt;/ and also attached as a classifier JAR
+    (e.g. windows-x86_64, linux-x86_64, darwin-aarch64).
+  </description>
+
+  <properties>
+    <cargo.skip>false</cargo.skip>
+    <rust.workspace.root>${project.basedir}/../..</rust.workspace.root>
+  </properties>
+
+  <build>
+    <extensions>
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
+
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>cargo-build-ffi</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <skip>${cargo.skip}</skip>
+              <executable>cargo</executable>
+              <workingDirectory>${rust.workspace.root}</workingDirectory>
+              <arguments>
+                <argument>build</argument>
+                <argument>-p</argument>
+                <argument>mkd-gcm-ffi</argument>
+                <argument>--release</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Copy cargo release artifact into the classifier resource tree -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>copy-native</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <condition property="is.windows">
+                  <os family="windows"/>
+                </condition>
+                <condition property="is.mac">
+                  <os family="mac"/>
+                </condition>
+                <condition property="is.unix.not.mac">
+                  <and>
+                    <os family="unix"/>
+                    <not>
+                      <os family="mac"/>
+                    </not>
+                  </and>
+                </condition>
+
+                <condition property="lib.file" value="mkd_gcm_ffi.dll">
+                  <isset property="is.windows"/>
+                </condition>
+                <condition property="lib.file" value="libmkd_gcm_ffi.dylib">
+                  <isset property="is.mac"/>
+                </condition>
+                <condition property="lib.file" value="libmkd_gcm_ffi.so">
+                  <isset property="is.unix.not.mac"/>
+                </condition>
+
+                <fail unless="lib.file" message="Unsupported OS for mkd-gcm-natives packaging"/>
+
+                <!-- Allow -Dnative.platform=... override; default os-maven classifier -->
+                <condition property="plat" value="${native.platform}">
+                  <and>
+                    <isset property="native.platform"/>
+                    <not>
+                      <equals arg1="${native.platform}" arg2=""/>
+                    </not>
+                  </and>
+                </condition>
+                <property name="plat" value="${os.detected.classifier}"/>
+
+                <property name="cargo.release" location="${rust.workspace.root}/target/release"/>
+                <property name="dest.dir"
+                          location="${project.build.outputDirectory}/dev/monkeyking/gcm/native/${plat}"/>
+
+                <mkdir dir="${dest.dir}"/>
+                <copy file="${cargo.release}/${lib.file}" todir="${dest.dir}" failonerror="true"/>
+                <echo message="Packaged ${lib.file} as platform ${plat}"/>
+
+                <!-- Export for later attach -->
+                <echo file="${project.build.directory}/native-platform.properties"
+                      message="native.platform=${plat}${line.separator}native.lib.file=${lib.file}${line.separator}"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Main JAR: contains host-platform natives under the resource path (runtime extraction). -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <!-- Classified JAR for consumers who pin an OS classifier explicitly -->
+          <execution>
+            <id>classifier-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>${os.detected.classifier}</classifier>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Natives have no Java sources; still attach empty sources/javadoc for Central -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <configuration>
+              <forceCreation>true</forceCreation>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration><doclint>none</doclint></configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

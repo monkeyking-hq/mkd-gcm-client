@@ -69,5 +69,8 @@ Never hardcode lab ports in tests.
 ## Packaging notes
 
 - **crates.io:** metadata is set; do not `cargo publish` without an explicit release.
-- **Maven:** `distributionManagement` targets **GitHub Packages** for this repo
-  until Maven Central is configured. Do not commit credentials.
+- **Maven groupId:** `dev.monkeyking`. Reactor parent: `bindings/pom.xml`.
+- **Maven Central:** profile `-Pcentral` uses Sonatype Central Portal plugin;
+  credentials live only in `~/.m2/settings.xml` server id **`central`** (never commit).
+- **Natives:** module `bindings/java-natives` builds `mkd-gcm-ffi` via cargo and
+  packages the shared library; multi-OS classifier JARs need per-platform builds.
